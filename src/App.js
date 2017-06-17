@@ -13,6 +13,7 @@ class App extends Component {
     this.login = this.login.bind(this);
     this.toggleLogin = this.toggleLogin.bind(this);
     this.incCount = this.incCount.bind(this);
+    this.authHandler = this.authHandler.bind(this);
 
     this.state = {
       user: null,
@@ -22,6 +23,15 @@ class App extends Component {
 
   componentWillMount() {
     this.database = firebase.database();
+  }
+
+  componentDidMount() {
+    console.log('loaded');
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user) {
+        this.authHandler(user);
+      }
+    });
   }
 
   toggleLogin() {
@@ -42,24 +52,7 @@ class App extends Component {
   }
 
   login() {
-    const self = this;
-    firebase.auth().signInWithPopup(provider).then(function(result) {
-      // This gives you a Google Access Token. You can use it to access the Google API.
-      // var token = result.credential.accessToken;
-      // The signed-in user info.
-      var user = result.user;
-      console.log(user);
-
-      self.database.ref('counters/' + user.uid + '/count').once('value').then((snapshot) => {
-        var userCounter = snapshot.val();
-        console.log('userCounter', userCounter);
-        self.setState({
-          user: user,
-          count: userCounter || 0
-        });
-      });
-      // ...
-    }).catch(function(error) {
+    firebase.auth().signInWithPopup(provider).catch(function(error) {
       // Handle Errors here.
       var errorCode = error.code;
       var errorMessage = error.message;
@@ -70,6 +63,25 @@ class App extends Component {
       // ...
     });
   }
+
+  authHandler(user) {
+      // This gives you a Google Access Token. You can use it to access the Google API.
+      // var token = result.credential.accessToken;
+      // The signed-in user info.
+      // var user = result.user;
+      console.log(user);
+      // const self = this;
+
+      this.database.ref('counters/' + user.uid + '/count').once('value').then((snapshot) => {
+        var userCounter = snapshot.val();
+        console.log('userCounter', userCounter);
+        this.setState({
+          user: user,
+          count: userCounter || 0
+        });
+      });
+      // ...
+    }
 
   incCount() {
     this.database.ref('counters/' + this.state.user.uid).set({count: this.state.count + 1}).then(() => {
